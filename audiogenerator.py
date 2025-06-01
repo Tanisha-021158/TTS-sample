@@ -1,30 +1,29 @@
 import requests
 import os
 from genderdetection import detect_gender
+from predict_emotion import process_script_emotions  
 
 # === CONFIG ===
-API_KEY = "sk_0fb792af8e166b088748b97aa2ff09d719e9bad0b21c0e5c"
+API_KEY = "sk_0afc7c625ab002429361719d94c9856a3987ad78b79a1c81"
 SCRIPT_FILE = "script.txt"
 
 # Your custom ElevenLabs voice IDs
 voice_map = {
-    "male": "wlpQBRhZtedzcMp28hF1",
-    "female": "o0fLOvUpjMRqfWyUgiuB"
+    "male": "ZSruKT7dxK3hKgfHUl0m",
+    "female": "FQ4LU5boZVsszfqflq0t"
 }
 
 # === Emotion-based Voice Settings ===
 emotion_settings = {
-    "neutral": {"stability": 0.7, "similarity_boost": 0.75},
-    "happy": {"stability": 0.4, "similarity_boost": 0.85},
-    "sad": {"stability": 0.3, "similarity_boost": 0.8},
-    "angry": {"stability": 0.2, "similarity_boost": 0.9},
+    "joy": {"stability": 0.4, "similarity_boost": 0.85},
+    "sadness": {"stability": 0.3, "similarity_boost": 0.8},
+    "anger": {"stability": 0.2, "similarity_boost": 0.9},
     "fear": {"stability": 0.35, "similarity_boost": 0.75},
     "surprise": {"stability": 0.3, "similarity_boost": 0.7},
-    "disgust": {"stability": 0.25, "similarity_boost": 0.85}
+    "love": {"stability": 0.4, "similarity_boost": 0.8},
+    "neutral": {"stability": 0.7, "similarity_boost": 0.75},
+    
 }
-
-# Default emotion for now (can connect NLP later)
-EMOTION = "sad"
 
 # === Audio Generation Function ===
 def generate_audio(text, output_filename, voice_id, emotion="neutral"):
@@ -49,28 +48,29 @@ def generate_audio(text, output_filename, voice_id, emotion="neutral"):
     response = requests.post(url, headers=headers, json=payload)
 
     if response.status_code == 200:
-        # 🛠️ Ensure output folder exists
         os.makedirs(os.path.dirname(output_filename), exist_ok=True)
-
         with open(output_filename, "wb") as f:
             f.write(response.content)
         print(f"✅ Saved: {output_filename}")
     else:
         print(f"❌ Error ({response.status_code}): {response.text}")
 
-# === Process Each Line in script.txt ===
+# === Process Script with Emotion Integration ===
 def process_script(script_path):
-    with open(script_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
+    results = process_script_emotions(script_path)
 
-    for i, line in enumerate(lines, 1):
-        if ":" not in line:
-            continue
+    for i, result in enumerate(results, 1):
+        speaker = result["speaker"]
+        original = result["original_dialogue"]       # Marathi text
+        translated = result["translated_dialogue"]   # English text
+        emotion = result["emotion_label"]
 
-        speaker, dialogue = map(str.strip, line.split(":", 1))
         gender, source = detect_gender(speaker)
-
-        print(f"🔍 Speaker: {speaker} ➜ Gender: {gender} (via {source})")
+        print(f"\n🔊 Line {i}")
+        print(f"👤 Speaker: {speaker} ➜ Gender: {gender} (via {source})")
+        print(f"🗣️ Marathi: {original}")
+        print(f"🌐 English: {translated}")
+        print(f"🎭 Emotion: {emotion}")
 
         voice_id = voice_map.get(gender)
         if not voice_id:
@@ -78,7 +78,8 @@ def process_script(script_path):
             continue
 
         output_file = f"static/audio/line_{i}_{speaker}.mp3"
-        generate_audio(dialogue, output_file, voice_id, EMOTION)
+        # Generate audio from Marathi text
+        generate_audio(original, output_file, voice_id, emotion)
 
 # === Run It ===
 if __name__ == "__main__":
