@@ -3,13 +3,6 @@ import os
 from genderdetection import detect_gender
 from predict_emotion import process_script_emotions
 
-API_KEY = "sk_6ba337198ebef251137185092caccb6e0d9289aab9ab1738"
-
-# Voice IDs for gender-based mapping
-voice_map = {
-    "male": "svaVf6W5BO5YD32uZxDa",
-    "female": "OD2UizDkEWDE2pGC9W8Y"
-}
 
 # Emotion-specific ElevenLabs settings
 emotion_settings = {
